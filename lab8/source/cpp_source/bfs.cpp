@@ -50,4 +50,3 @@ GraphCSR::bfs(int s){
         vertexs[u].color = BLACK;
     }
 }
-

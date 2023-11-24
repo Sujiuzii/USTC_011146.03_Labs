@@ -20,7 +20,7 @@ Optimal::optimalschedulingsub(int i)
     if (cost <= tmp)
         return;
     if (i == n) {   
-        // the following code will lower the performance quite a lot
+        // if want to get all match, it cost great performance
         // if(tmp <= cost){
         //     cost = tmp;
         //     bestmatch = match;
@@ -38,6 +38,7 @@ Optimal::optimalschedulingsub(int i)
             }
         }
         if (!flag || current[j] + Time[i] >= cost)
+        // if (!flag)
             continue;
         current[j] += Time[i];
         match[i] = j;

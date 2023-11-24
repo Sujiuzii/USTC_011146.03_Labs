@@ -26,36 +26,32 @@ class GraphAdjList {
 public:
     int V, E;
     vector<Edge> edges;
-    vector<vector<int> > adj;
+    vector<vector<int>> adj;
     vector<Vertex> vertexs;
 
-    GraphAdjList(vector<Edge> edges){
+    GraphAdjList(vector<Edge> edges) : V(0), E(edges.size()) {
         for (auto e : edges) {
             this->edges.push_back(e);
+            V = max(V, max(e.u, e.v));
         }
-        V = 0;
-        E = edges.size();
+        // cout << "V: " << V << endl;
+        adj.resize(V);
         for (auto e : edges) {
-            if (e.u > V)
-                V = e.u;
-            if (e.v > V)
-                V = e.v;
-            adj.resize(V);
             adj[e.u - 1].push_back(e.v - 1);
             adj[e.v - 1].push_back(e.u - 1);
         }
+        // cout << "check loop2" << endl;
+        vertexs.resize(V);
         for (auto i = 0; i < V; i++) {
-            Vertex v;
-            v.color = WHITE;
-            v.distance = -1;
-            v.parent = -1;
-            vertexs.push_back(v);
+            vertexs[i].color = WHITE;
+            vertexs[i].distance = -1;
+            vertexs[i].parent = -1;
         }
+        // cout << "check loop3" << endl;
     }
     ~GraphAdjList() {}
     void bfs(int s);
 };
-
 class GraphCSR {
 public:
     int V, E;
