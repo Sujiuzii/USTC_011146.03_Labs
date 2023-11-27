@@ -1,4 +1,4 @@
-.vscode/
+*/.vscode/
 *.zip
 *.7z
 */readme.md

@@ -1,19 +1,26 @@
-all: clean main
+all: direct indirect
 
 # CXX = g++
 CXX = clang++
 CXXFLAGS = -Wall -O3 -std=c++11
 
-MAINCPP = main.cpp\
+DIRECTEDCPP = twitter.cpp\
 		  timer.cpp\
 		  rw.cpp\
 		  bfs.cpp
 
+INDIRECTEDCPP = indirect.cpp\
+		  timer.cpp\
+		  rw.cpp\
+		  bfs.cpp
 
-main: *.cpp
-	$(CXX) $(CXXFLAGS) -o main $(MAINCPP)
+direct: $(DIRECTEDCPP)
+	$(CXX) $(CXXFLAGS) -o direct $(DIRECTEDCPP)
+
+indirect: $(INDIRECTEDCPP)
+	$(CXX) $(CXXFLAGS) -o indirect $(INDIRECTEDCPP)
 
 clean:
-	rm -f main
+	rm -f direct indirect 
 
 .PHONY: clean

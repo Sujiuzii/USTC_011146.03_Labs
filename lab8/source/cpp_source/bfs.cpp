@@ -7,7 +7,7 @@
 using namespace std;
 
 void
-GraphAdjList::bfs(int s){
+GraphAdjMat::bfs(int s){
     queue<int> Q;
     vertexs[s].color = GRAY;
     vertexs[s].distance = 0;
@@ -29,7 +29,7 @@ GraphAdjList::bfs(int s){
 }
 
 void
-GraphCSR::bfs(int s){
+GraphAdjList::bfs(int s){
     queue<int> Q;
     vertexs[s].color = GRAY;
     vertexs[s].distance = 0;
@@ -38,13 +38,14 @@ GraphCSR::bfs(int s){
     while (!Q.empty()) {
         int u = Q.front();
         Q.pop();
-        for (auto i = col_index[u]; i < col_index[u + 1]; i++) {
-            int v = edges[i];
-            if (vertexs[v].color == WHITE) {
-                vertexs[v].color = GRAY;
-                vertexs[v].distance = vertexs[u].distance + 1;
-                vertexs[v].parent = u;
-                Q.push(v);
+        for (linklist *tmp = vertexs[u].adjacent; tmp->next != nullptr;) {
+            tmp = tmp->next;
+            if (vertexs[tmp->v].color == WHITE) {
+                vertexs[tmp->v].color = GRAY;
+                vertexs[tmp->v].distance = vertexs[u].distance + 1;
+                vertexs[tmp->v].parent = u;
+                vertexs[tmp->v].flag = s;
+                Q.push(tmp->v);
             }
         }
         vertexs[u].color = BLACK;

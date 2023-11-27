@@ -7,105 +7,174 @@
 #include <iostream>
 #include <chrono>
 #include <algorithm>
+#include <unordered_map>
 
 using namespace std;
 
 enum color_t { WHITE, GRAY, BLACK };
 
+/**
+ * @brief u and v are two vertexs of an edge, for directed edge, u is the source vertex, v is the destination vertex
+ * 
+ */
 struct Edge {
     int u, v;
 };
 
+/**
+ * @brief vertex for indirected graph
+ * 
+ */
 struct Vertex {
     color_t color;
     int distance;
     int parent;
 };
 
+/**
+ * @brief adjacent list for directed graph
+ * 
+ */
+struct linklist {
+    int v;
+    linklist *next;
+    linklist *previous;
+};
+
+/**
+ * @brief vertex for directed graph
+ * 
+ */
+struct VertexAdj {
+    color_t color;
+    int distance;
+    int parent;
+    linklist *adjacent;
+    int flag;
+};
+
+/**
+ * @brief Graph represented by adjacent list, for directed graph
+ * 
+ */
 class GraphAdjList {
+public:
+    // key is vertex index, value is vertex structure
+    unordered_map<int, VertexAdj> vertexs;
+    int V, E;
+    vector<Edge> edges;
+
+    /**
+     * @brief Construct a new Graph Adj List object
+     * 
+     * @param edges edges of the graph
+     */
+    GraphAdjList(vector<Edge> edges) : V(0), E(edges.size()) {
+        for (auto e : edges) {
+            this->edges.push_back(e);
+        }
+        for (auto e : edges) {
+            if (vertexs.find(e.u) == vertexs.end()) {
+                vertexs[e.u].color = WHITE;
+                vertexs[e.u].distance = -1;
+                vertexs[e.u].parent = -1;
+                vertexs[e.u].adjacent = new linklist;
+                vertexs[e.u].adjacent->previous = vertexs[e.u].adjacent;
+                vertexs[e.u].adjacent->next = new linklist;
+                vertexs[e.u].adjacent->next->v = e.v;
+                if (vertexs.find(e.v) == vertexs.end()) {
+                    vertexs[e.v].color = WHITE;
+                    vertexs[e.v].distance = -1;
+                    vertexs[e.v].parent = -1;
+                    vertexs[e.v].adjacent = new linklist;
+                    vertexs[e.v].adjacent->previous = vertexs[e.v].adjacent;
+                    vertexs[e.v].adjacent->next = nullptr;
+                    V++;
+                    vertexs[e.v].flag = 0;
+                }
+                vertexs[e.u].adjacent->next->previous = vertexs[e.u].adjacent;
+                vertexs[e.u].adjacent->next->next = nullptr;
+                vertexs[e.u].flag = 0;
+                V++;
+            }
+            else {
+                int fg=0;
+                linklist *p = vertexs[e.u].adjacent;
+                while (p->next != nullptr) {
+                    p = p->next;
+                    if (p->v == e.v) {
+                        fg = 1;
+                        break;
+                    }
+                }
+                if (!fg) {
+                    p->next = new linklist;
+                    p->next->v = e.v;
+                    if (vertexs.find(e.v) == vertexs.end()) {
+                        vertexs[e.v].color = WHITE;
+                        vertexs[e.v].distance = -1;
+                        vertexs[e.v].parent = -1;
+                        vertexs[e.v].adjacent = new linklist;
+                        vertexs[e.v].adjacent->previous = vertexs[e.v].adjacent;
+                        vertexs[e.v].adjacent->next = nullptr;
+                        V++;
+                    }
+                    p->next->previous = p;
+                    p->next->next = nullptr;
+                }
+            }
+        }
+    }
+    ~GraphAdjList(){}
+    /**
+     * @brief bfs
+     * 
+     * @param s start vertex
+     */
+    void bfs(int s);
+};
+
+/**
+ * @brief Graph represented by adjacent matrix, for indirected graph
+ * 
+ */
+class GraphAdjMat {
 public:
     int V, E;
     vector<Edge> edges;
     vector<vector<int>> adj;
     vector<Vertex> vertexs;
 
-    GraphAdjList(vector<Edge> edges) : V(0), E(edges.size()) {
+    /**
+     * @brief Construct a new Graph Adj Mat object
+     * 
+     * @param edges edges of the graph
+     */
+    GraphAdjMat(vector<Edge> edges) : V(0), E(edges.size()) {
         for (auto e : edges) {
             this->edges.push_back(e);
             V = max(V, max(e.u, e.v));
         }
-        // cout << "V: " << V << endl;
         adj.resize(V);
         for (auto e : edges) {
             adj[e.u - 1].push_back(e.v - 1);
             adj[e.v - 1].push_back(e.u - 1);
         }
-        // cout << "check loop2" << endl;
         vertexs.resize(V);
         for (auto i = 0; i < V; i++) {
             vertexs[i].color = WHITE;
             vertexs[i].distance = -1;
             vertexs[i].parent = -1;
         }
-        // cout << "check loop3" << endl;
     }
-    ~GraphAdjList() {}
+    ~GraphAdjMat() {}
+    /**
+     * @brief bfs
+     * 
+     * @param s start vertex
+     */
     void bfs(int s);
 };
-class GraphCSR {
-public:
-    int V, E;
-    vector<int> col_index;
-    vector<int> row_ptr;
-    vector<int> edges;
-    vector<Vertex> vertexs;
-
-    // CSR: Compressed Sparse Row
-    GraphCSR(vector<Edge> edges){
-        for (auto e : edges) {
-            this->edges.push_back(e.u - 1);
-            this->edges.push_back(e.v - 1);
-        }
-        V = 0;
-        E = edges.size();
-        for (auto e : edges) {
-            if (e.u > V)
-                V = e.u;
-            if (e.v > V)
-                V = e.v;
-        }
-        col_index.resize(V + 1);
-        row_ptr.resize(V + 1);
-        for (auto i = 0; i < V + 1; i++) {
-            col_index[i] = 0;
-            row_ptr[i] = 0;
-        }
-        for (auto e : this->edges) {
-            col_index[e + 1]++;
-        }
-        for (auto i = 1; i < V + 1; i++) {
-            col_index[i] += col_index[i - 1];
-        }
-        for (auto i = 0; i < E; i++) {
-            row_ptr[this->edges[2 * i]]++;
-            row_ptr[this->edges[2 * i + 1]]++;
-        }
-        for (auto i = 1; i < V + 1; i++) {
-            row_ptr[i] += row_ptr[i - 1];
-        }
-        for (auto i = 0; i < V; i++) {
-            Vertex v;
-            v.color = WHITE;
-            v.distance = -1;
-            v.parent = -1;
-            vertexs.push_back(v);
-        }
-    }
-    ~GraphCSR() {}
-    void bfs(int s);
-
-};
-
 
 void readfile(vector<Edge> &edges, string filename);
 
