@@ -62,6 +62,7 @@ public:
     // key is vertex index, value is vertex structure
     unordered_map<int, VertexAdj> vertexs;
     int V, E;
+    int largestindex = 0;
     vector<Edge> edges;
 
     /**
@@ -74,6 +75,12 @@ public:
             this->edges.push_back(e);
         }
         for (auto e : edges) {
+<<<<<<< HEAD
+            if (max(e.u, e.v) > largestindex) {
+                largestindex = max(e.u, e.v);
+            }
+=======
+>>>>>>> 1e3791873ae206343f3610f3f933b7dd4c9367ea
             if (vertexs.find(e.u) == vertexs.end()) {
                 vertexs[e.u].color = WHITE;
                 vertexs[e.u].distance = -1;
@@ -98,7 +105,11 @@ public:
                 V++;
             }
             else {
+<<<<<<< HEAD
+                int fg = 0;
+=======
                 int fg=0;
+>>>>>>> 1e3791873ae206343f3610f3f933b7dd4c9367ea
                 linklist *p = vertexs[e.u].adjacent;
                 while (p->next != nullptr) {
                     p = p->next;
@@ -117,6 +128,10 @@ public:
                         vertexs[e.v].adjacent = new linklist;
                         vertexs[e.v].adjacent->previous = vertexs[e.v].adjacent;
                         vertexs[e.v].adjacent->next = nullptr;
+<<<<<<< HEAD
+                        vertexs[e.v].flag = 0;
+=======
+>>>>>>> 1e3791873ae206343f3610f3f933b7dd4c9367ea
                         V++;
                     }
                     p->next->previous = p;

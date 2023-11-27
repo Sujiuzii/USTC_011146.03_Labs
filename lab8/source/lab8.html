@@ -1,0 +1,226 @@
+<!doctype html>
+<html>
+<head>
+<meta charset='UTF-8'><meta name='viewport' content='width=device-width initial-scale=1'>
+<title>writeup</title>
+</head>
+<body><h1 id='lab-8--图搜索-bfs-算法及存储优化'>Lab 8:  图搜索 BFS 算法及存储优化</h1>
+<p>PB21020718 曾健斌</p>
+<h2 id='一实验内容'>一、实验内容</h2>
+<p>针对图,根据给定的数据选择合适的存储方式(邻接矩阵和邻接表中的一种)进行存储，并进行图的广度优先遍历的过程。</p>
+<p><strong>数据集 1</strong>：使用 <code>data.txt</code> 中的数据，看做无向图，选择合适的方式进行存储(提示:其特征为节点数较少而边比较密集)，并以 A 为起始顶点输出遍历过程。</p>
+<p><strong>数据集 2</strong>： twitter 真实数据集,数据集规模如下:
+twitter_small: Nodes 81306, Edges 1768149, 有向图;
+twitter_large: Nodes 11316811, Edges 85331846, 有向图。
+对 twitter_small,选择一种合适的存储方式存储数据,并输出 BFS 的遍历时间。twitter_large 不做要求。
+提示:图可能不是连通图,且可能有重复边。</p>
+<p>&nbsp;</p>
+<h2 id='二算法实现'>二、算法实现</h2>
+<h3 id='相关结构体与枚举类'>相关结构体与枚举类</h3>
+<pre><code class='language-cpp' lang='cpp'>// bfs颜色
+enum color_t { WHITE, GRAY, BLACK };
+
+// 边结构体，用于构造器，本实现中有向边与无向边均使用该结构体
+struct Edge {
+    int u, v;
+};
+
+// 无向图邻接矩阵实现中使用的结构体，后续将使用它实例化二重vector
+struct Vertex {
+    color_t color;
+    int distance;
+    int parent;
+};
+
+// 链表，用于邻接链表实现中作为邻接链表
+struct linklist {
+    int v;
+    linklist *next;
+    linklist *previous;
+};
+
+// 在邻接链表实现中作为顶点序列
+struct VertexAdj {
+    color_t color;
+    int distance;
+    int parent;
+    linklist *adjacent;
+    int flag;  // flag字段为考虑到可能有多个连通子图设立的字段
+};
+</code></pre>
+<h3 id='邻接链表实现'>邻接链表实现</h3>
+<pre><code class='language-cpp' lang='cpp'>class GraphAdjList {
+public:
+    // 用于顶点检索，使用无序的哈希map提高效率
+    unordered_map&lt;int, VertexAdj&gt; vertexs;
+    int V, E;
+    vector&lt;Edge&gt; edges;
+    // 构造器，本实现构造器比较繁琐
+    GraphAdjList(vector&lt;Edge&gt; edges) : V(0), E(edges.size()) {
+        for (auto e : edges) {
+            this-&gt;edges.push_back(e);
+        }
+        // 对每一条边进行以下考虑
+        for (auto e : edges) {
+            if (vertexs.find(e.u) == vertexs.end()) { // 若该顶点已存在
+                vertexs[e.u].color = WHITE;
+                vertexs[e.u].distance = -1;
+                vertexs[e.u].parent = -1;
+                vertexs[e.u].adjacent = new linklist;
+                vertexs[e.u].adjacent-&gt;previous = vertexs[e.u].adjacent;
+                vertexs[e.u].adjacent-&gt;next = new linklist;
+                vertexs[e.u].adjacent-&gt;next-&gt;v = e.v;
+                if (vertexs.find(e.v) == vertexs.end()) { // 判断边的尾结点是否存在
+                    vertexs[e.v].color = WHITE;
+                    vertexs[e.v].distance = -1;
+                    vertexs[e.v].parent = -1;
+                    vertexs[e.v].adjacent = new linklist;
+                    vertexs[e.v].adjacent-&gt;previous = vertexs[e.v].adjacent;
+                    vertexs[e.v].adjacent-&gt;next = nullptr;
+                    V++;
+                    vertexs[e.v].flag = 0; // 初始化为0,后续用于存储bfs源点值
+                }
+                // 维护邻接链表
+                vertexs[e.u].adjacent-&gt;next-&gt;previous = vertexs[e.u].adjacent;
+                vertexs[e.u].adjacent-&gt;next-&gt;next = nullptr;
+                vertexs[e.u].flag = 0;
+                V++;
+            }
+            else { // 顶点已存在则直接修改邻接链
+                int fg = 0;  // fg是考虑到重复边设置的标志位
+                linklist *p = vertexs[e.u].adjacent;
+                while (p-&gt;next != nullptr) {
+                    p = p-&gt;next;
+                    if (p-&gt;v == e.v) {  // 判断为重复边，放弃该边
+                        fg = 1;
+                        break;
+                    }
+                }
+                if (!fg) {
+                    p-&gt;next = new linklist;
+                    p-&gt;next-&gt;v = e.v;
+                    if (vertexs.find(e.v) == vertexs.end()) {  // 同样判断尾结点是否存在
+                        vertexs[e.v].color = WHITE;
+                        vertexs[e.v].distance = -1;
+                        vertexs[e.v].parent = -1;
+                        vertexs[e.v].adjacent = new linklist;
+                        vertexs[e.v].adjacent-&gt;previous = vertexs[e.v].adjacent;
+                        vertexs[e.v].adjacent-&gt;next = nullptr;
+                        vertexs[e.v].flag = 0;
+                        V++;
+                    }
+                    p-&gt;next-&gt;previous = p;
+                    p-&gt;next-&gt;next = nullptr;
+                }
+            }
+        }
+    }
+    ~GraphAdjList(){}
+    void bfs(int s);
+};
+</code></pre>
+<h3 id='bfs-实现邻接链表）'>bfs 实现（邻接链表）</h3>
+<pre><code class='language-cpp' lang='cpp'>void
+GraphAdjList::bfs(int s){
+    queue&lt;int&gt; Q;  // 用于bfs的队列
+    vertexs[s].color = GRAY;
+    vertexs[s].distance = 0;
+    vertexs[s].parent = -1;
+    Q.push(s);
+    while (!Q.empty()) {  // 重复入队出队涂色等操作实现bfs
+        int u = Q.front();
+        Q.pop();
+        for (linklist *tmp = vertexs[u].adjacent; tmp-&gt;next != nullptr;) {
+            tmp = tmp-&gt;next;
+            if (vertexs[tmp-&gt;v].color == WHITE) {
+                vertexs[tmp-&gt;v].color = GRAY;
+                vertexs[tmp-&gt;v].distance = vertexs[u].distance + 1;
+                vertexs[tmp-&gt;v].parent = u;
+                vertexs[tmp-&gt;v].flag = s;
+                Q.push(tmp-&gt;v);
+            }
+        }
+        vertexs[u].color = BLACK;
+    }
+}
+</code></pre>
+<h3 id='邻接矩阵实现'>邻接矩阵实现</h3>
+<pre><code class='language-cpp' lang='cpp'>class GraphAdjMat {
+public:
+    int V, E;
+    vector&lt;Edge&gt; edges;
+    vector&lt;vector&lt;int&gt;&gt; adj; // 维护一个二维邻接矩阵
+    vector&lt;Vertex&gt; vertexs;
+	
+    // 邻接矩阵实现的构造器相对简单，需要注意的是动态维护矩阵大小
+    GraphAdjMat(vector&lt;Edge&gt; edges) : V(0), E(edges.size()) {
+        for (auto e : edges) {
+            this-&gt;edges.push_back(e);
+            V = max(V, max(e.u, e.v)); // 维护最大顶点序号
+        }
+        adj.resize(V);  // 维护矩阵大小
+        for (auto e : edges) {
+            adj[e.u - 1].push_back(e.v - 1);
+            adj[e.v - 1].push_back(e.u - 1);
+        }
+        vertexs.resize(V);
+        for (auto i = 0; i &lt; V; i++) {
+            vertexs[i].color = WHITE;
+            vertexs[i].distance = -1;
+            vertexs[i].parent = -1;
+        }
+    }
+    ~GraphAdjMat() {}
+    void bfs(int s);
+};
+</code></pre>
+<h3 id='bfs-实现邻接矩阵）'>bfs 实现（邻接矩阵）</h3>
+<pre><code class='language-cpp' lang='cpp'>// 此bfs与邻接链表处的实现思路一致，不再多言
+void
+GraphAdjMat::bfs(int s){
+    queue&lt;int&gt; Q;
+    vertexs[s].color = GRAY;
+    vertexs[s].distance = 0;
+    vertexs[s].parent = -1;
+    Q.push(s);
+    while (!Q.empty()) {
+        int u = Q.front();
+        Q.pop();
+        for (auto v : adj[u]) {
+            if (vertexs[v].color == WHITE) {
+                vertexs[v].color = GRAY;
+                vertexs[v].distance = vertexs[u].distance + 1;
+                vertexs[v].parent = u;
+                Q.push(v);
+            }
+        }
+        vertexs[u].color = BLACK;
+    }
+}
+</code></pre>
+<p>&nbsp;</p>
+<h2 id='三实验结果'>三、实验结果</h2>
+<p>两个数据集耗时：</p>
+<p><img src="../../../../snap/typora/86/.config/Typora/typora-user-images/image-20231127185602938.png" referrerpolicy="no-referrer" alt="time"></p>
+<p>输出 bfs 结果至文件</p>
+<p><img src="../../../../snap/typora/86/.config/Typora/typora-user-images/image-20231127185641178.png" referrerpolicy="no-referrer" alt="assignment1"></p>
+<p><img src="../../../../snap/typora/86/.config/Typora/typora-user-images/image-20231127185702554.png" referrerpolicy="no-referrer" alt="assignment2"></p>
+<p>其中数据集 twitter_small 有两个连通分量</p>
+<p><img src="../../../../snap/typora/86/.config/Typora/typora-user-images/image-20231127185719277.png" referrerpolicy="no-referrer" alt="connectedcomponents"></p>
+<p>&nbsp;</p>
+<h2 id='四实验总结'>四、实验总结</h2>
+<p>本次实验中邻接矩阵的实现较为简单，而邻接链表的实现相对复杂</p>
+<ul>
+<li>领接矩阵使用二重 vector 实现</li>
+<li>领接链表使用 unordered_map 与链表结构体实现，构造器较为复杂，但是在降低时间成本上颇有效果</li>
+
+</ul>
+<p>关于存储方式选择的考虑</p>
+<ul>
+<li>对于比较小的数据集使用邻接矩阵，因为该存储方式比较简单，而且由于数据点序号密集，我使用了与最大序号一样大小的矩阵</li>
+<li>但是在对 twitter_small 的实验中，以上实现会把内存跑爆</li>
+<li>对于后者，由于其边比较稀疏，且顶点数大，顶点序号分散的情况，采用邻接链表实现显然是更好的选择</li>
+
+</ul>
+</body>
+</html>

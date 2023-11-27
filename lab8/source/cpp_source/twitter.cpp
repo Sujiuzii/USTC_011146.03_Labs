@@ -11,7 +11,13 @@ main(int argc, char** argv)
 {
     Timer timer;
     vector<Edge> edges;
+<<<<<<< HEAD
+    cout << "checking input file..." << endl;
     readfile(edges, argv[1]);
+    cout << "input file checked" << endl;
+=======
+    readfile(edges, argv[1]);
+>>>>>>> 1e3791873ae206343f3610f3f933b7dd4c9367ea
     GraphAdjList g(edges);
     int start = -1;
     double time = 0;
@@ -20,7 +26,12 @@ main(int argc, char** argv)
     fout << "vertex distance for file " << argv[1] << endl;
     fout << "vertex #: " << g.V << endl;
     fout << "edge #: " << g.E << endl;
+<<<<<<< HEAD
+    // cout << g.largestindex << endl;
+    for (int i = 0; i < g.largestindex; i++) {
+=======
     for (int i = 0; i < g.vertexs.size(); i++) {
+>>>>>>> 1e3791873ae206343f3610f3f933b7dd4c9367ea
         if (g.vertexs.find(i) != g.vertexs.end()) {
             start = i;
             break;
@@ -40,6 +51,10 @@ main(int argc, char** argv)
         }
     }
     while (count != g.V) {
+<<<<<<< HEAD
+        timer.reset();
+=======
+>>>>>>> 1e3791873ae206343f3610f3f933b7dd4c9367ea
         for (auto v : g.vertexs) {
             if (v.second.flag != start) {
                 start = v.first;
@@ -47,7 +62,10 @@ main(int argc, char** argv)
                 break;
             }
         }
+<<<<<<< HEAD
+=======
         timer.reset();
+>>>>>>> 1e3791873ae206343f3610f3f933b7dd4c9367ea
         g.bfs(start);
         time += timer.elapsed();
         for (auto v : g.vertexs) {
